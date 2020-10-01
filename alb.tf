@@ -29,8 +29,13 @@ resource "aws_lb" "api" {
   enable_http2                     = true
   ip_address_type                  = "dualstack"
   enable_deletion_protection       = true
+  tags                             = module.labels.tags
 
-  tags = module.labels.tags
+  access_logs {
+    bucket  = module.alb_logs.aws_logs_bucket
+    prefix  = "api"
+    enabled = true
+  }
 }
 
 resource "aws_lb_target_group" "api" {
@@ -120,8 +125,13 @@ resource "aws_lb" "push" {
   enable_http2                     = true
   ip_address_type                  = "dualstack"
   enable_deletion_protection       = true
+  tags                             = module.labels.tags
 
-  tags = module.labels.tags
+  access_logs {
+    bucket  = module.alb_logs.aws_logs_bucket
+    prefix  = "push"
+    enabled = true
+  }
 }
 
 resource "aws_lb_target_group" "push" {
@@ -152,11 +162,28 @@ resource "aws_lb_listener" "push_https" {
   load_balancer_arn = aws_lb.push.id
   port              = 443
   protocol          = "HTTPS"
-  ssl_policy        = "ELBSecurityPolicy-FS-2018-06"
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-Ext-2018-06"
   certificate_arn   = local.alb_push_certificate_arn
 
   default_action {
     target_group_arn = aws_lb_target_group.push.id
     type             = "forward"
   }
+}
+
+# #########################################
+# ALB logs - single bucket for both ALBs each with their own prefix
+# #########################################
+module "alb_logs" {
+  source  = "trussworks/logs/aws"
+  version = "8.2.0"
+
+  alb_logs_prefixes       = ["api", "push"]
+  allow_alb               = true
+  default_allow           = false
+  force_destroy           = true
+  region                  = var.aws_region
+  s3_bucket_name          = format("%s-alb-logs", module.labels.id)
+  s3_log_bucket_retention = var.logs_retention_days
+  tags                    = module.labels.tags
 }

@@ -47,6 +47,11 @@ variable "kms_writer_arns" {
   default = []
 }
 
+# If using a custom runtime i.e. runtime = "provided", set this to a list of layers
+variable "layers" {
+  default = null
+}
+
 variable "log_retention_days" {
   default = 1
 }
@@ -60,11 +65,20 @@ variable "name" {
 }
 
 variable "runtime" {
-  default = "nodejs10.x"
+  default = "nodejs12.x"
 }
 
 variable "security_group_ids" {
   default = []
+}
+
+# Default is not to use it
+variable "s3_bucket" {
+  default = ""
+}
+
+variable "s3_key" {
+  default = ""
 }
 
 variable "sns_topic_arns_to_consume_from" {
@@ -103,6 +117,7 @@ locals {
   aws_managed_policy_arn_to_attach_count = var.enable && var.aws_managed_policy_arn_to_attach != "" ? 1 : 0
   enable_cloudwatch_schedule_count       = var.enable && var.cloudwatch_schedule_expression != "" ? 1 : 0
   enable_count                           = var.enable ? 1 : 0
+  use_s3_as_source                       = var.s3_bucket != "" && var.s3_key != ""
 }
 
 data "archive_file" "this" {
@@ -126,7 +141,10 @@ data "aws_iam_policy_document" "this" {
   dynamic statement {
     for_each = var.enable_sns_publish_for_sms_without_a_topic ? { 1 : 1 } : {}
     content {
-      actions   = ["sns:Publish"]
+      actions = [
+        "sns:Publish",
+        "sns:SetSMSAttributes",
+      ]
       resources = ["*"]
     }
   }
@@ -264,15 +282,19 @@ resource "aws_iam_role_policy_attachment" "this" {
 resource "aws_lambda_function" "this" {
   count = local.enable_count
 
-  filename         = format("%s/.zip/%s.zip", path.module, var.name)
-  function_name    = var.name
-  handler          = var.handler
-  memory_size      = var.memory_size
-  role             = aws_iam_role.this[0].arn
-  runtime          = var.runtime
-  source_code_hash = data.archive_file.this.output_base64sha256
-  tags             = var.tags
-  timeout          = var.timeout
+  filename         = local.use_s3_as_source ? null : format("%s/.zip/%s.zip", path.module, var.name)
+  s3_bucket        = local.use_s3_as_source ? var.s3_bucket : null
+  s3_key           = local.use_s3_as_source ? var.s3_key : null
+  source_code_hash = local.use_s3_as_source ? null : data.archive_file.this.output_base64sha256
+
+  function_name = var.name
+  handler       = var.handler
+  layers        = var.layers
+  memory_size   = var.memory_size
+  role          = aws_iam_role.this[0].arn
+  runtime       = var.runtime
+  tags          = var.tags
+  timeout       = var.timeout
 
   depends_on = [aws_cloudwatch_log_group.this]
 
@@ -284,7 +306,10 @@ resource "aws_lambda_function" "this" {
   }
 
   lifecycle {
-    ignore_changes = [source_code_hash]
+    ignore_changes = [
+      source_code_hash,
+      filename
+    ]
   }
 
   # See https://www.terraform.io/docs/providers/aws/r/lambda_function.html#vpc_config

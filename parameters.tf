@@ -57,6 +57,14 @@ resource "aws_ssm_parameter" "db_host" {
   tags      = module.labels.tags
 }
 
+resource "aws_ssm_parameter" "db_pool_size" {
+  overwrite = true
+  name      = "${local.config_var_prefix}db_pool_size"
+  type      = "String"
+  value     = var.db_pool_size
+  tags      = module.labels.tags
+}
+
 resource "aws_ssm_parameter" "db_port" {
   overwrite = true
   name      = "${local.config_var_prefix}db_port"
@@ -97,6 +105,14 @@ resource "aws_ssm_parameter" "default_region" {
   tags      = module.labels.tags
 }
 
+resource "aws_ssm_parameter" "disable_valid_key_check" {
+  overwrite = true
+  name      = "${local.config_var_prefix}disable_valid_key_check"
+  type      = "String"
+  value     = var.disable_valid_key_check
+  tags      = module.labels.tags
+}
+
 resource "aws_ssm_parameter" "enable_callback" {
   overwrite = true
   name      = "${local.config_var_prefix}enable_callback"
@@ -113,11 +129,43 @@ resource "aws_ssm_parameter" "enable_check_in" {
   tags      = module.labels.tags
 }
 
+resource "aws_ssm_parameter" "enable_legacy_settings" {
+  overwrite = true
+  name      = "${local.config_var_prefix}enable_legacy_settings"
+  type      = "String"
+  value     = var.enable_legacy_settings
+  tags      = module.labels.tags
+}
+
 resource "aws_ssm_parameter" "enable_metrics" {
   overwrite = true
   name      = "${local.config_var_prefix}enable_metrics"
   type      = "String"
   value     = var.enable_metrics
+  tags      = module.labels.tags
+}
+
+resource "aws_ssm_parameter" "certificate_audience" {
+  overwrite = true
+  name      = "${local.config_var_prefix}certificate_audience"
+  type      = "String"
+  value     = var.certificate_audience
+  tags      = module.labels.tags
+}
+
+resource "aws_ssm_parameter" "hsts_max_age" {
+  overwrite = true
+  name      = "${local.config_var_prefix}hsts_max_age"
+  type      = "String"
+  value     = var.hsts_max_age
+  tags      = module.labels.tags
+}
+
+resource "aws_ssm_parameter" "jwt_issuer" {
+  overwrite = true
+  name      = "${local.config_var_prefix}jwt_issuer"
+  type      = "String"
+  value     = var.app_bundle_id
   tags      = module.labels.tags
 }
 
@@ -142,6 +190,14 @@ resource "aws_ssm_parameter" "native_regions" {
   name      = "${local.config_var_prefix}native_regions"
   type      = "String"
   value     = var.native_regions
+  tags      = module.labels.tags
+}
+
+resource "aws_ssm_parameter" "onset_date_mandatory" {
+  overwrite = true
+  name      = "${local.config_var_prefix}onset_date_mandatory"
+  type      = "String"
+  value     = var.onset_date_mandatory
   tags      = module.labels.tags
 }
 
@@ -193,11 +249,11 @@ resource "aws_ssm_parameter" "security_code_lifetime_mins" {
   tags      = module.labels.tags
 }
 
-resource "aws_ssm_parameter" "security_exposure_limit" {
+resource "aws_ssm_parameter" "security_code_removal_mins" {
   overwrite = true
-  name      = "${local.config_var_prefix}security_exposure_limit"
+  name      = "${local.config_var_prefix}security_code_removal_mins"
   type      = "String"
-  value     = var.exposure_limit
+  value     = var.code_removal_mins
   tags      = module.labels.tags
 }
 
@@ -257,11 +313,51 @@ resource "aws_ssm_parameter" "sms_url" {
   tags      = module.labels.tags
 }
 
+resource "aws_ssm_parameter" "symptom_date_offset" {
+  overwrite = true
+  name      = "${local.config_var_prefix}symptom_date_offset"
+  type      = "String"
+  value     = var.symptom_date_offset
+  tags      = module.labels.tags
+}
+
+resource "aws_ssm_parameter" "time_zone" {
+  overwrite = true
+  name      = "${local.config_var_prefix}time_zone"
+  type      = "String"
+  value     = var.time_zone
+  tags      = module.labels.tags
+}
+
+resource "aws_ssm_parameter" "upload_max_keys" {
+  overwrite = true
+  name      = "${local.config_var_prefix}upload_max_keys"
+  type      = "String"
+  value     = var.upload_max_keys
+  tags      = module.labels.tags
+}
+
 resource "aws_ssm_parameter" "upload_token_lifetime_mins" {
   overwrite = true
   name      = "${local.config_var_prefix}upload_token_lifetime_mins"
   type      = "String"
-  value     = var.refresh_token_expiry
+  value     = var.upload_token_lifetime_mins
+  tags      = module.labels.tags
+}
+
+resource "aws_ssm_parameter" "use_test_date_as_onset_date" {
+  overwrite = true
+  name      = "${local.config_var_prefix}use_test_date_as_onset_date"
+  type      = "String"
+  value     = var.use_test_date_as_onset_date
+  tags      = module.labels.tags
+}
+
+resource "aws_ssm_parameter" "variance_offset_mins" {
+  overwrite = true
+  name      = "${local.config_var_prefix}variance_offset_mins"
+  type      = "String"
+  value     = var.variance_offset_mins
   tags      = module.labels.tags
 }
 
@@ -274,6 +370,15 @@ resource "aws_ssm_parameter" "arcgis_url" {
   name      = "${local.config_var_prefix}arcgis_url"
   type      = "String"
   value     = var.arcgis_url
+  tags      = module.labels.tags
+}
+
+resource "aws_ssm_parameter" "callback_email_notifications_sns_arn" {
+  count     = local.enable_callback_email_notifications_count
+  overwrite = true
+  name      = "${local.config_var_prefix}callback_email_notifications_sns_arn"
+  type      = "String"
+  value     = join("", aws_sns_topic.callback_email_notifications.*.arn)
   tags      = module.labels.tags
 }
 

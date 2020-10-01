@@ -14,7 +14,7 @@ data "aws_ami" "amazon_linux_2" {
 
 resource "aws_autoscaling_group" "bastion" {
   count               = local.bastion_enabled_count
-  desired_capacity    = 1
+  desired_capacity    = var.bastion_asg_desired_count
   max_size            = 1
   min_size            = 0
   name                = format("%s-bastion", module.labels.id)
@@ -110,7 +110,7 @@ resource "aws_iam_role" "bastion" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "bastion_amazon_ssm_managed_Instance_core" {
+resource "aws_iam_role_policy_attachment" "bastion_amazon_ssm_managed_instance_core" {
   count      = local.bastion_enabled_count
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   role       = aws_iam_role.bastion[0].name
